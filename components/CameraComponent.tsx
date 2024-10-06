@@ -3,7 +3,6 @@ import { useRef, useState } from 'react';
 import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import axios from 'axios';
-import { AVPlaybackStatusSuccess, Audio } from 'expo-av'
 import * as Speech from 'expo-speech';
 
 export function CameraComponent() {
@@ -12,8 +11,6 @@ export function CameraComponent() {
     const [isCameraVisible, setIsCameraVisible] = useState(false);
     const cameraRef = useRef(null);
     const [loading, setLoading] = useState(false);
-
-    
 
     if (!permission) {
       // Camera permissions are still loading.
@@ -74,10 +71,12 @@ export function CameraComponent() {
         }
     }
 
-    async function textToSpeech(textToSpeak, outputPath = "output.mp3", chunkSize = 1024) {
+    function textToSpeech(textToSpeak: string) {
         try {
         console.log("Text to speech loading: ", textToSpeak)
-        await Speech.speak(textToSpeak)
+        Speech.speak(textToSpeak, {
+            language: 'bg',
+        })
         console.log("Text to speech finished loading")
         } catch (error) {
             console.error('An error occurred:', error);
