@@ -77,7 +77,7 @@ export function CameraComponent() {
         }
     }
 
-    async function textToSpeech(textToSpeak) {
+    async function textToSpeech(textToSpeak, outputPath = "output.mp3", chunkSize = 1024) {
         console.log("Text to speech loading")
         try {
         const apiKey = 'sk_2d846c058728854fbb35d8c7fe42704858f1c6ccb938f914';
@@ -116,19 +116,16 @@ export function CameraComponent() {
              const response = await axios.post(ttsUrl, data, { headers });
             
             if (response.status === 200) {
-                console.log('Text to speed success');
-                const baseURI = FileSystem.documentDirectory;
-                console.log(baseURI)
-                if (baseURI === null) {
-                    console.log("BaseURI is null")
-                    return;
-                } else {
-                    const uri = await FileSystem.StorageAccessFramework.createFileAsync(baseURI, "temporary.mp3", "audio")
+                const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                if (permissions.granted === true) {
+                    console.log('Permission Granted', permissions.directoryUri);
+                    const uri = await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri, "temporary.mp3", "audio")
                     const {sound} = await Audio.Sound.createAsync({ uri: uri });
                     await sound.playAsync();
                     console.log('Playing Sound');
+                } else {
+                    console.log('Permission Denied');
                 }
-
                 //const { sound } = await Audio.Sound.createAsync({ source: response.data})
                 
                 /* await FileSystem.writeAsStringAsync("file://output.mp3", response.data, { encoding: FileSystem.EncodingType.Base64 })
