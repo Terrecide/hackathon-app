@@ -4,7 +4,6 @@ import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import axios from 'axios';
 import { AVPlaybackStatusSuccess, Audio } from 'expo-av'
-import ReactNativeBlobUtil from 'react-native-blob-util'
 
 export function CameraComponent() {
     const [facing, setFacing] = useState<CameraType>('back');
@@ -81,7 +80,7 @@ export function CameraComponent() {
     async function textToSpeech(textToSpeak, outputPath = "output.mp3", chunkSize = 1024) {
         console.log("Text to speech loading")
         try {
-        const apiKey = 'sk_d2d36a5add15700863508cfedff6e27e2116ed288eb8003c';
+        const apiKey = 'sk_2d846c058728854fbb35d8c7fe42704858f1c6ccb938f914';
         const voiceId = 'pNInz6obpgDQGcFmaJgB';
         const ttsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
         const headers = {
@@ -117,17 +116,26 @@ export function CameraComponent() {
              const response = await axios.post(ttsUrl, data, { headers });
             
             if (response.status === 200) {
-
-
-                await FileSystem.writeAsStringAsync("file://output.mp3", response.data, { encoding: FileSystem.EncodingType.Base64 })
+                const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                if (permissions.granted === true) {
+                    console.log('Permission Granted');
+                    const uri = await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri, "temporary.mp3", "audio")
+                    const {sound} = await Audio.Sound.createAsync({ uri: uri });
+                    await sound.playAsync();
+                    console.log('Playing Sound');
+                } else {
+                    console.log('Permission Denied');
+                }
+                //const { sound } = await Audio.Sound.createAsync({ source: response.data})
+                
+                /* await FileSystem.writeAsStringAsync("file://output.mp3", response.data, { encoding: FileSystem.EncodingType.Base64 })
                 // Don't forget to clean the cache when you're done playing the file, it is not done automatically
                 ReactNativeBlobUtil.fs.unlink(path)
                 console.log('Loading Sound');
                 await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-                const { sound } = await Audio.Sound.("output.mp3")
-            
-                console.log('Playing Sound');
-                await sound.playAsync();
+                const { sound } = await Audio.Sound.("output.mp3") */
+                
+                
             } else {
                 console.error(`Error: ${response.status}, ${response.data}`);
             }
@@ -146,9 +154,6 @@ export function CameraComponent() {
                 <View style={styles.containerCamera}>
                     <CameraView style={styles.camera} facing={facing} ref={cameraRef} >
                     <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-                            <Text style={styles.text}>Flip</Text>
-                        </TouchableOpacity>
                         <TouchableOpacity style={styles.button} onPress={() => setIsCameraVisible(false)}>
                             <Text style={styles.text}>Hide</Text>
                         </TouchableOpacity>
