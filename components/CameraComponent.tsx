@@ -11,6 +11,7 @@ export function CameraComponent() {
     const [isCameraVisible, setIsCameraVisible] = useState(false);
     const cameraRef = useRef(null);
     const [loading, setLoading] = useState(false);
+    const [avatarTalking, setAvatarTalking] = useState(false);
 
     if (!permission) {
       // Camera permissions are still loading.
@@ -36,9 +37,9 @@ export function CameraComponent() {
                 setLoading(true);
                 const base64Data = await FileSystem.readAsStringAsync(photo.uri, { encoding: FileSystem.EncodingType.Base64 });
                 const text = await extractTextFromImage(base64Data)
-                await textToSpeech(text)
-                //console.log(text)
                 setLoading(false);
+                textToSpeech(text);
+
             } catch (error) {
                 console.log(error)
             }
@@ -73,14 +74,25 @@ export function CameraComponent() {
 
     function textToSpeech(textToSpeak: string) {
         try {
-        console.log("Text to speech loading: ", textToSpeak)
+        console.log("Text to speech: ", textToSpeak)
+        setAvatarTalking(true);
         Speech.speak(textToSpeak, {
-            language: 'bg',
-        })
-        console.log("Text to speech finished loading")
+            language: 'en',
+            pitch: 1,
+            rate: 0.75,
+            onDone: () => {
+                speakExtraQuestions();
+            }
+        }),
+        console.log("Text to speech finished")
         } catch (error) {
             console.error('An error occurred:', error);
         }
+    }
+
+    function speakExtraQuestions() {
+        //TODO: call GPT and get extra questions and speak them on done stop speaking
+        setAvatarTalking(false);
     }
   
     return (
@@ -88,6 +100,8 @@ export function CameraComponent() {
         {
             loading ? (
                 <Text style={styles.text}>Loading...</Text>
+            ) : avatarTalking ? (
+                <Text style={styles.text}>Avatar is talking...</Text>
             ) : isCameraVisible ? (
                 <View style={styles.containerCamera}>
                     <CameraView style={styles.camera} facing={facing} ref={cameraRef} >
