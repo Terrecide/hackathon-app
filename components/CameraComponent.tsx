@@ -1,9 +1,11 @@
-import { CameraView, CameraType, useCameraPermissions, takePictureAsync } from 'expo-camera';
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useRef, useState } from 'react';
 import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import axios from 'axios';
 import * as Speech from 'expo-speech';
+import { TabBarIcon } from './navigation/TabBarIcon';
+import OpenAI from 'openai';
 
 export function CameraComponent() {
     const [facing, setFacing] = useState<CameraType>('back');
@@ -39,7 +41,7 @@ export function CameraComponent() {
                 const text = await extractTextFromImage(base64Data)
                 setLoading(false);
                 textToSpeech(text);
-
+                
             } catch (error) {
                 console.log(error)
             }
@@ -81,7 +83,7 @@ export function CameraComponent() {
             pitch: 1,
             rate: 0.75,
             onDone: () => {
-                speakExtraQuestions();
+                speakExtraQuestions(textToSpeak);
             }
         }),
         console.log("Text to speech finished")
@@ -90,33 +92,73 @@ export function CameraComponent() {
         }
     }
 
-    function speakExtraQuestions() {
-        //TODO: call GPT and get extra questions and speak them on done stop speaking
-        setAvatarTalking(false);
+    async function speakExtraQuestions(textToSpeak: any) {
+        try {
+          const client = new OpenAI({
+            apiKey: '', // This is the default and can be omitted
+          });
+          const prompt = 'You are a literature teacher for 12th-grade students in Bulgaria. Based on the following text, create a question that checks the students understanding of the material and whether they are prepared for the final exam:' + textToSpeak + '. Just return the questions directly.';
+          const chatCompletion = await client.chat.completions.create({
+            messages: [{ role: 'system', content: prompt }],
+            model: 'gpt-4-turbo',
+          });
+   
+          const generatedQuestion = chatCompletion.choices[0].message.content;
+          console.log(generatedQuestion);
+   
+          Speech.speak(generatedQuestion!, {
+            language: 'en',
+            pitch: 1,
+            rate: 0.75,
+            onDone: () => {
+              setAvatarTalking(false);
+            }
+          });
+        } catch (error) {
+          console.error('Error generating question:', error);
+        }
+    }
+
+    function speakStop() {
+      Speech.stop();
     }
   
     return (
       <View style={styles.container}>
         {
             loading ? (
-                <Text style={styles.text}>Loading...</Text>
+                <Text style={styles.text}>
+                  <TabBarIcon name={'refresh'} color={"white"} />
+                </Text>
             ) : avatarTalking ? (
+              <View style={styles.containerMain}>
                 <Text style={styles.text}>Avatar is talking...</Text>
+                <TouchableOpacity style={styles.button} onPress={speakStop}>
+                  <TabBarIcon name={'pause'} color={"white"} />
+                </TouchableOpacity>
+              </View>
+
             ) : isCameraVisible ? (
                 <View style={styles.containerCamera}>
                     <CameraView style={styles.camera} facing={facing} ref={cameraRef} >
+
+                    </CameraView>
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity style={styles.button} onPress={() => setIsCameraVisible(false)}>
-                            <Text style={styles.text}>Hide</Text>
+                          <TabBarIcon name={'close'} color={"white"} />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.button} onPress={takePicture}>
-                            <Text style={styles.text}>Take</Text>
+                          <TabBarIcon name={'camera'} color={"white"} />
                         </TouchableOpacity>
                     </View>
-                    </CameraView>
                 </View>
             ) : (
-                <Button onPress={() => setIsCameraVisible(true)} title="Show Camera" />
+                <View style={styles.containerMain}>
+                    <Text style={styles.text}>Hello, I'm your learning assistant.{"\n"}{"\n"}Take a photo of your study book to continue:</Text>
+                    <TouchableOpacity style={styles.button} onPress={() => setIsCameraVisible(true)}>
+                      <TabBarIcon name={'camera'} color={"white"} />
+                    </TouchableOpacity>
+                </View>
             )
         }
       </View>
@@ -133,6 +175,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     height: '100%',
     width: '100%',
+    paddingTop: 100,
   },
   message: {
     textAlign: 'center',
@@ -140,10 +183,24 @@ const styles = StyleSheet.create({
   },
   containerCamera: {
     flex: 1,
+    flexGrow: 1,
     width: '100%',
     height: '100%',
-    //position: 'absolute',
+    position: 'absolute',
+    bottom: 0,
     zIndex: 1
+  },
+  containerMain: {
+    flex: 1,
+    flexGrow: 1,
+    gap: 15,
+    padding: 20,
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+    textAlign: 'center',
+    height: '100%',
+    width: '100%',
   },
   camera: {
     flex: 1,
@@ -152,15 +209,16 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flex: 1,
-    backgroundColor: 'transparent',
+    flexGrow: 1,
+    backgroundColor: 'black',
+    position: 'absolute',
+    bottom: 0,
     flexDirection: 'row',
-    margin: 20,
     padding: 20,
-    justifyContent: 'space-between',
+    paddingBottom: 50,
   },
   button: {
     flex: 1,
-    alignSelf: 'flex-end',
     alignItems: 'center',
   },
   text: {

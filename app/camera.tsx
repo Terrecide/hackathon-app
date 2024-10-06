@@ -6,7 +6,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import CameraComponent from '@/components/CameraComponent';
 
-export default function HomeScreen() {
+export default function CameraScreen() {
   return (
     <CameraComponent />
   );
