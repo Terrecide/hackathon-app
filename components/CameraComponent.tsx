@@ -4,6 +4,7 @@ import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import axios from 'axios';
 import { AVPlaybackStatusSuccess, Audio } from 'expo-av'
+import * as Speech from 'expo-speech';
 
 export function CameraComponent() {
     const [facing, setFacing] = useState<CameraType>('back');
@@ -27,10 +28,6 @@ export function CameraComponent() {
           <Button onPress={requestPermission} title="grant permission" />
         </View>
       );
-    }
-  
-    function toggleCameraFacing() {
-      setFacing(current => (current === 'back' ? 'front' : 'back'));
     }
 
     async function takePicture() {
@@ -78,68 +75,10 @@ export function CameraComponent() {
     }
 
     async function textToSpeech(textToSpeak, outputPath = "output.mp3", chunkSize = 1024) {
-        console.log("Text to speech loading")
         try {
-        const apiKey = 'sk_2d846c058728854fbb35d8c7fe42704858f1c6ccb938f914';
-        const voiceId = 'pNInz6obpgDQGcFmaJgB';
-        const ttsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-        const headers = {
-            "Accept": "application/json",
-            "xi-api-key": apiKey
-        };
-        const data = {
-            "text": textToSpeak,
-            "model_id": "eleven_multilingual_v2",
-            "voice_settings": {
-                "stability": 0.5,
-                "similarity_boost": 0.8,
-                "style": 0.0,
-                "use_speaker_boost": true
-            }
-        };
-
-        const voiceSettings = {
-            "stability": 0.5,
-            "similarity_boost": 0.8,
-            "style": 0.0,
-            "use_speaker_boost": true
-        }
-
-        const historyUrl = `https://api.elevenlabs.io/v1/history`;
-        const historyBody = {
-            voice_id: voiceId,
-            page_size: 1,
-            headers: headers
-        }
-        //const response = await axios.get(historyUrl, historyBody);
-        //console.log(response.data)
-             const response = await axios.post(ttsUrl, data, { headers });
-            
-            if (response.status === 200) {
-                const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-                if (permissions.granted === true) {
-                    console.log('Permission Granted', permissions.directoryUri);
-                    const uri = await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri, "temporary.mp3", "audio")
-                    const {sound} = await Audio.Sound.createAsync({ uri: uri });
-                    await sound.playAsync();
-                    console.log('Playing Sound');
-                } else {
-                    console.log('Permission Denied');
-                }
-                //const { sound } = await Audio.Sound.createAsync({ source: response.data})
-                
-                /* await FileSystem.writeAsStringAsync("file://output.mp3", response.data, { encoding: FileSystem.EncodingType.Base64 })
-                // Don't forget to clean the cache when you're done playing the file, it is not done automatically
-                ReactNativeBlobUtil.fs.unlink(path)
-                console.log('Loading Sound');
-                await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-                const { sound } = await Audio.Sound.("output.mp3") */
-                
-                
-            } else {
-                console.error(`Error: ${response.status}, ${response.data}`);
-            }
-            console.log("Text to speech finished loading")
+        console.log("Text to speech loading: ", textToSpeak)
+        await Speech.speak(textToSpeak)
+        console.log("Text to speech finished loading")
         } catch (error) {
             console.error('An error occurred:', error);
         }
